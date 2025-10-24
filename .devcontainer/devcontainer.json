@@ -1,0 +1,55 @@
+// .devcontainer/devcontainer.json
+{
+  "name": "PhotoAI - Ambiente de Microsserviços",
+
+  // Aponta para o seu arquivo Docker Compose, que define os contêineres.
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+
+  // INSTRUÇÃO MAIS IMPORTANTE:
+  // Diz ao VS Code para se conectar ao nosso contêiner 'dev-environment',
+  // que serve como a "oficina" para o desenvolvimento.
+  "service": "dev-environment",
+
+  // A pasta que será aberta por padrão no VS Code.
+  // '/workspaces' é o local que definimos no volume do docker-compose.
+  "workspaceFolder": "/workspaces",
+
+  // Bloco que define quais ferramentas adicionais devem ser instaladas
+  // no contêiner de desenvolvimento.
+  "features": {
+    // Instala o Java e o Maven usando a "feature" oficial do Dev Containers.
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",          // <-- Especifica a instalação do Java 21.
+      "installMaven": "true",     // <-- Instrui a feature a instalar o Maven também.
+      "mavenVersion": "latest"  // (Opcional) Garante que a última versão do Maven seja instalada.
+    }
+  },
+
+  // Customizações para a experiência do desenvolvedor dentro do VS Code.
+  "customizations": {
+    "vscode": {
+      // Configurações padrão do VS Code para este projeto.
+      "settings": {
+        "java.jdt.ls.java.home": "/usr/lib/jvm/ms-jdk-21-amd64",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      // Lista de extensões que serão instaladas automaticamente no ambiente.
+      "extensions": [
+        "vscjava.vscode-java-pack",             // Pacote completo para desenvolvimento Java
+        "redhat.java",                          // Suporte principal à linguagem Java
+        "vscjava.vscode-maven",                 // Suporte para projetos Maven
+        "vscjava.vscode-spring-boot-dashboard", // Dashboard para gerenciar apps Spring Boot
+        "vmware.vscode-spring-boot",            // Ferramentas de autocompletar para Spring Boot
+        "ms-azuretools.vscode-docker",          // Integração com Docker (visualizar contêineres, etc.)
+        "ms-vscode-remote.remote-containers",   // A própria extensão Dev Containers
+        "esbenp.prettier-vscode"                // Formatador de código para consistência
+      ]
+    }
+  },
+
+  // Um comando para ser executado após o ambiente ser totalmente construído.
+  // Serve como uma verificação para garantir que Java e Maven foram instalados corretamente.
+  "postCreateCommand": "java -version && mvn -version"
+}
