@@ -1,0 +1,59 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------
+  # SERVIÇO ESPECIAL PARA O AMBIENTE DE DESENVOLVIMENTO (VS Code)
+  # ----------------------------------------------------------------
+  dev-environment:
+    # Sugestão: Alinhar a imagem base com a versão do Java no devcontainer (21)
+    image: mcr.microsoft.com/devcontainers/java:21-bullseye
+    volumes:
+      - ..:/workspaces:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    depends_on:
+      - postgres-db
+      - rabbitmq
+
+  # ----------------------------------------------------------------
+  # DEPENDÊNCIAS DE INFRAESTRUTURA
+  # ----------------------------------------------------------------
+  
+  # 1. Banco de Dados (com DBs separados por serviço)
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      # Criação dos múltiplos bancos de dados na inicialização
+      POSTGRES_MULTIPLE_DATABASES: identity_db,subscription_db,gallery_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Script para criar múltiplos DBs (precisa estar na mesma pasta)
+      - ./init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Mensageria (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # Porta para os microsserviços (AMQP)
+      - "15672:15672" # Porta para o painel de gerenciamento web
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
