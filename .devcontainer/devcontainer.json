@@ -32,7 +32,6 @@
     "vscode": {
       // Configurações padrão do VS Code para este projeto.
       "settings": {
-        "java.jdt.ls.java.home": "/usr/lib/jvm/ms-jdk-21-amd64",
         "terminal.integrated.defaultProfile.linux": "bash"
       },
       // Lista de extensões que serão instaladas automaticamente no ambiente.
