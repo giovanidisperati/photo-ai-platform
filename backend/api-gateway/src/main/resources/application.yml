@@ -1,0 +1,95 @@
+server:
+  port: 8080 # A porta pública única
+
+spring:
+  application:
+    name: api-gateway
+  
+  cloud:
+    gateway:
+      routes:
+        # Essas rotas ainda serão melhoradas com autenticação e autorização e finalizadas
+        # mais tarde. Por hora as demais rotas ficam como placeholders dos serviços que
+        # iremos implementar posteriormente.
+
+        # Rota 1: Geração (porta 8081)
+        - id: generation_service_route
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/v1/generate/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: generation-cb # (nome do disjuntor)
+                # Todos os fallbacks apontam para o mesmo endpoint genérico
+                fallbackUri: forward:/fallback/service-unavailable
+
+        # Rota 2: Identidade (porta 8082)
+        - id: identity_service_route
+          uri: http://localhost:8082
+          predicates:
+            # Rota para login, registo, refresh token, etc.
+            - Path=/api/v1/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: identity-cb
+                fallbackUri: forward:/fallback/service-unavailable
+
+        # Rota 3: Galeria (porta 8083)
+        - id: gallery_service_route
+          uri: http://localhost:8083
+          predicates:
+            # Rota para buscar/apagar imagens do utilizador
+            - Path=/api/v1/gallery/**
+          filters:
+            # TODO: Adicionar um filtro de segurança JWT aqui
+            - name: CircuitBreaker
+              args:
+                name: gallery-cb
+                fallbackUri: forward:/fallback/service-unavailable
+
+        # Rota 4: Assinaturas (porta 8084)
+        - id: subscription_service_route
+          uri: http://localhost:8084
+          predicates:
+            # Rota para buscar quotas e planos
+            - Path=/api/v1/subscriptions/**
+          filters:
+            # TODO: Adicionar um um filtro de segurança JWT aqui
+            - name: CircuitBreaker
+              args:
+                name: subscription-cb
+                fallbackUri: forward:/fallback/service-unavailable
+
+# ----- CONFIGURAÇÃO DO CIRCUIT BREAKER (RESILIENCE4J) -----
+
+# 1. Definição da configuração "default"
+resilience4j:
+  circuitbreaker:
+    configs:
+      default: # Esta é a nossa base de configuração
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s # 5 segundos
+  
+  # 2. Instâncias que usam a configuração "default"
+    instances:
+      # Os nomes devem ser os mesmos dos filtros acima
+      generation-cb:
+        baseConfig: default
+      identity-cb:
+        baseConfig: default
+      gallery-cb:
+        baseConfig: default
+      subscription-cb:
+        baseConfig: default
+
+# ----- CONFIGURAÇÃO DE GESTÃO (MANAGEMENT) -----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,gateway,circuitbreakers"
